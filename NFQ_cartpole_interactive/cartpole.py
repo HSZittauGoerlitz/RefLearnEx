@@ -147,9 +147,9 @@ class CartPoleRegulatorEnv(gym.Env):
             (e_theta > self.theta_threshold_radians)):
             return True, self.cMax
 
-        c_x = self._costSmooth(e_x, 1.2, 0.008)
+        c_x = self._costSmooth(e_x, 0.6, 0.01)
         c_theta = self._costSmooth(e_theta, 0.125*self.theta_success_range,
-                                   0.012)
+                                   0.02)
 
         return (False, c_x + c_theta + self.cFix)
 
