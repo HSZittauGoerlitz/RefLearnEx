@@ -8,19 +8,14 @@ cMax = 1.
 env = CartPoleRegulatorEnv(cMax, mode="train")
 env.reset()
 
+# %% parameter
+omega_x = 0.6
+w_x = 0.01
+o_x = -0.0075
 
-def get_c_x(x):
-    c_x_theta_min = env._getCost(x, 0)[1]
-    c_x_theta_max = env._getCost(x, 0.25*np.pi)[1]
-
-    return c_x_theta_min + c_x_theta_max
-
-
-def get_c_theta(theta):
-    c_theta_x_min = env._getCost(0., theta)[1]
-    c_theta_x_max = env._getCost(4.8, theta)[1]
-
-    return c_theta_x_min + c_theta_x_max
+omega_theta = 0.125*env.theta_success_range
+w_theta = 0.02
+o_theta = -0.0125
 
 
 # %% create Data
@@ -28,8 +23,8 @@ x = np.arange(-4.8, 4.81, 0.01)
 theta = np.arange(-12 * 2 * np.pi / 360,
                   12 * 2 * np.pi / 360 + 1e-4, 1e-4)
 
-c_x = np.fromiter(map(get_c_x, x), np.float32)
-c_theta = np.fromiter(map(get_c_theta, theta), np.float32)
+c_x = env._costSmooth(x, omega_x, w_x, o_x)
+c_theta = env._costSmooth(theta, omega_theta, w_theta, o_theta)
 
 # %% View
 l_x = go.Scatter({"x": x,

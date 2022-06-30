@@ -135,9 +135,8 @@ class CartPoleRegulatorEnv(gym.Env):
 
         return x, x_dot, theta, theta_dot
 
-    def _costSmooth(self, e, omega, w):
-        return (np.tanh(e / omega)**2. * self.cMax - 0.5 * self.cMax) * w
-
+    def _costSmooth(self, e, omega, w, offset):
+        return np.tanh(e/omega)**2 * w + offset
 
     def _getCost(self, x, theta):
         e_x = np.abs(0. - x)
@@ -147,9 +146,9 @@ class CartPoleRegulatorEnv(gym.Env):
             (e_theta > self.theta_threshold_radians)):
             return True, self.cMax
 
-        c_x = self._costSmooth(e_x, 0.6, 0.01)
+        c_x = self._costSmooth(e_x, 0.6, 0.04, -0.04)
         c_theta = self._costSmooth(e_theta, 0.125*self.theta_success_range,
-                                   0.02)
+                                   0.06, -0.06)
 
         return (False, c_x + c_theta + self.cFix)
 
