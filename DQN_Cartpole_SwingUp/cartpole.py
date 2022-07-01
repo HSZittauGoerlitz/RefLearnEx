@@ -149,7 +149,7 @@ class CartPoleRegulatorEnv(gym.Env):
             return True, self.rMax
 
         r_x = self._rewardSmooth(e_x, 0.6, -0.04, 0.04)
-        r_theta = self._rewardSmooth(e_theta, 0.05, -0.06, 0.06)
+        r_theta = self._rewardSmooth(e_theta, 0.5*np.pi, -0.06, 0.06)
 
         return False, r_x + r_theta + self.rFix
 
@@ -164,9 +164,6 @@ class CartPoleRegulatorEnv(gym.Env):
         self.episode_step += 1
 
         done, reward = self._getReward(x, theta)
-
-        if ~isinstance(reward, float):
-            reward = 0
 
         return [self.state, reward, done, {}]
 
