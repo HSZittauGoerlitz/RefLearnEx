@@ -28,7 +28,9 @@ session = ray.init(ignore_reinit_error=True)
 
 # %% Controller
 agent = dqn.DQNTrainer(config, env=CartPoleRegulatorEnv)
-agent.train()
+
+for _ in range(500):
+    agent.train()
 
 
 # %% demo mode

@@ -51,7 +51,7 @@ class CartPoleRegulatorEnv(gym.Env):
 
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 50}
 
-    def __init__(self, cMax, cFix=-0.001, mode="train"):
+    def __init__(self, rMax, rFix=-0.001, mode="train"):
         self.gravity = 9.8
         self.masscart = 1.
         self.masspole = 0.05
@@ -70,11 +70,11 @@ class CartPoleRegulatorEnv(gym.Env):
         self.x_threshold = 4.8
         self.theta_threshold_radians = math.pi / 2
 
-        self.cMax = cMax
-        self.cFix = cFix
+        self.rMax = rMax
+        self.rFix = rFix
 
-        if self.cFix > 0:
-            print("The fixed cost value is greater than 0, "
+        if self.rFix < 0:
+            print("The fixed reward value is smaller than 0, "
                   "this will punish longer Transitions.")
 
         self.action_space = spaces.Discrete(2)
@@ -138,20 +138,20 @@ class CartPoleRegulatorEnv(gym.Env):
 
         return np.array([x, x_dot, theta, theta_dot])
 
-    def _costSmooth(self, e, omega, w, offset):
+    def _rewardSmooth(self, e, omega, w, offset):
         return np.tanh(e/omega)**2 * w + offset
 
-    def _getCost(self, x, theta):
+    def _getReward(self, x, theta):
         e_x = np.abs(0. - x)
         e_theta = np.abs(0. - theta)
 
         if e_x > self.x_threshold:
-            return True, self.cMax
+            return True, self.rMax
 
-        c_x = self._costSmooth(e_x, 0.6, 0.04, -0.04)
-        c_theta = self._costSmooth(e_theta, 0.05, 0.06, -0.06)
+        r_x = self._rewardSmooth(e_x, 0.6, -0.04, 0.04)
+        r_theta = self._rewardSmooth(e_theta, 0.05, -0.06, 0.06)
 
-        return False, c_x + c_theta + self.cFix
+        return False, r_x + r_theta + self.rFix
 
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (
@@ -163,12 +163,12 @@ class CartPoleRegulatorEnv(gym.Env):
 
         self.episode_step += 1
 
-        done, cost = self._getCost(x, theta)
+        done, reward = self._getReward(x, theta)
 
-        if ~isinstance(cost, float):
-            cost = 0
+        if ~isinstance(reward, float):
+            reward = 0
 
-        return [self.state, cost, done, {}]
+        return [self.state, reward, done, {}]
 
     def reset(self):
         self.state = self.np_random.uniform(
