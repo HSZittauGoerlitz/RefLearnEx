@@ -51,7 +51,7 @@ class CartPoleRegulatorEnv(gym.Env):
 
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 50}
 
-    def __init__(self, rMax, rFix=-0.001, mode="train"):
+    def __init__(self, _):
         self.gravity = 9.8
         self.masscart = 1.
         self.masspole = 0.05
@@ -70,8 +70,8 @@ class CartPoleRegulatorEnv(gym.Env):
         self.x_threshold = 4.8
         self.theta_threshold_radians = math.pi / 2
 
-        self.rMax = rMax
-        self.rFix = rFix
+        self.rMax = 1.
+        self.rFix = 0.
 
         if self.rFix < 0:
             print("The fixed reward value is smaller than 0, "
