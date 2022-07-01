@@ -62,24 +62,9 @@ class CartPoleRegulatorEnv(gym.Env):
         self.tau = 0.02  # seconds between state updates
         self.kinematics_integrator = "euler"
 
-        if mode not in ["train", "eval", "demo"]:
-            mode = "train"
-
-        if mode == "train":
-            self.max_steps = 100
-            self.low = [-0.5, -1., 0., -0.15]
-            self.high = [0.5, 1., 2*np.pi, 0.15]
-            self.render_sleep = 0.
-        elif mode =="eval":
-            self.max_steps = 500
-            self.low = [-0.5, 0., np.pi-0.1*np.pi, 0.]
-            self.high = [0.5, 0., np.pi+0.1*np.pi, 0.]
-            self.render_sleep = 0.
-        elif mode == "demo":
-            self.max_steps = None
-            self.low = [0., 0., np.pi, 0.]
-            self.high = [0., 0., np.pi, 0.]
-            self.render_sleep = 0.01
+        self.low = [-2.4, -10., -np.pi, -0.1]
+        self.high = [2.4, 10., np.pi, 0.1]
+        self.render_sleep = 0.01
 
         # Failure state description
         self.x_threshold = 4.8
@@ -101,18 +86,19 @@ class CartPoleRegulatorEnv(gym.Env):
 
         self.observation_space = spaces.Box(
           np.array([-4.8000002e+00, -3.4028235e+38,
-                    -4.1887903e-01, -3.4028235e+38]),
+                    -2.*np.pi, -3.4028235e+38]),
           np.array([4.8000002e+00, 3.4028235e+38,
-                    4.1887903e-01, 3.4028235e+38]),
-          (4,), np.float32)
+                    2.*np.pi, 3.4028235e+38]),
+          (4,), np.float64)
 
+        self.reset()
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def _compute_next_state(self, state, action, push=False):
-        x, x_dot, theta, theta_dot = state
+    def _compute_next_state(self, action, push=False):
+        x, x_dot, theta, theta_dot = self.state
         if push:
             force = self.force_mag * action
         else:
@@ -138,7 +124,19 @@ class CartPoleRegulatorEnv(gym.Env):
             theta_dot = theta_dot + self.tau * thetaacc
             theta = theta + self.tau * theta_dot
 
-        return x, x_dot, theta, theta_dot
+        # limit position to observation space
+        if x < -4.8000002e+00:
+            x = -4.8000002e+00
+        elif x > 4.8000002e+00:
+            x = 4.8000002e+00
+
+        # limit theta to 2pi range
+        if theta > 2*np.pi:
+            theta -= 2*np.pi
+        elif theta < -2*np.pi:
+            theta += 2*np.pi
+
+        return np.array([x, x_dot, theta, theta_dot])
 
     def _costSmooth(self, e, omega, w, offset):
         return np.tanh(e/omega)**2 * w + offset
@@ -153,34 +151,32 @@ class CartPoleRegulatorEnv(gym.Env):
         c_x = self._costSmooth(e_x, 0.6, 0.04, -0.04)
         c_theta = self._costSmooth(e_theta, 0.05, 0.06, -0.06)
 
-        return (False, c_x + c_theta + self.cFix)
+        return False, c_x + c_theta + self.cFix
 
     def step(self, action):
         assert self.action_space.contains(action), "%r (%s) invalid" % (
             action,
             type(action),
         )
-        self.state = self._compute_next_state(self.state, action)
+        self.state = self._compute_next_state(action)
         x, _, theta, _ = self.state
 
         self.episode_step += 1
 
         done, cost = self._getCost(x, theta)
 
-        # Check for time limit
-        if self.max_steps:
-            info = {"time_limit": self.episode_step >= self.max_steps}
-        else:
-            info = {"time_limit": False}
+        if ~isinstance(cost, float):
+            cost = 0
 
-        return np.array(self.state), cost, done, info
+        return [self.state, cost, done, {}]
 
     def reset(self):
-        self.state = self.np_random.uniform(low=self.low, high=self.high,
-                                            size=(4,))
+        self.state = self.np_random.uniform(
+          low=self.low, high=self.high,
+          size=self.observation_space.shape)
         self.episode_step = 0
 
-        return np.array(self.state)
+        return self.state
 
     def render(self, mode="human"):
         screen_width = 1200

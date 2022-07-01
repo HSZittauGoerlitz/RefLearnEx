@@ -1,7 +1,7 @@
 # %% Imports
-from d3rlpy.algos import DQN
-from d3rlpy.online.buffers import ReplayBuffer
-from d3rlpy.online.explorers import LinearDecayEpsilonGreedy
+import ray
+import ray.rllib.agents.dqn as dqn
+import shutil
 
 from cartpole import CartPoleRegulatorEnv
 
@@ -10,35 +10,32 @@ train_env = CartPoleRegulatorEnv(1., 0., mode="train")
 eval_env = CartPoleRegulatorEnv(1., 0., mode="eval")
 env = CartPoleRegulatorEnv(1., 0., mode="demo")
 
+# %% Configuration
+CHECKPOINT_ROOT = "tmp/"
+shutil.rmtree(CHECKPOINT_ROOT, ignore_errors=True, onerror=None)
+ray_results = "./ray_results/"
+shutil.rmtree(ray_results, ignore_errors=True, onerror=None)
+
+config = dqn.DEFAULT_CONFIG.copy()
+config['log_level'] = "WARN"
+config['num_workers'] = 0
+config['framework'] = "torch"
+config['horizon'] = 500
+
+# %% init ray
+ray.shutdown()
+session = ray.init(ignore_reinit_error=True)
 
 # %% Controller
-dqn = DQN(batch_size=32,
-          learning_rate=2.5e-4,
-          target_update_interval=100,
-          use_gpu=False)
+agent = dqn.DQNTrainer(config, env=CartPoleRegulatorEnv)
+agent.train()
 
-# replay buffer for experience replay
-buffer = ReplayBuffer(maxlen=100000, env=train_env)
 
-# epilon-greedy explorer
-explorer = LinearDecayEpsilonGreedy(start_epsilon=1.0,
-                                    end_epsilon=0.1,
-                                    duration=10000)
-
-# %% Training
-dqn.fit_online(train_env,
-               buffer,
-               explorer,
-               n_steps=30000,
-               eval_env=eval_env,
-               n_steps_per_epoch=1000,
-               update_start_step=1000)
-
-# %%
+# %% demo mode
 obs = env.reset()
 done = False
 while not done:
-    aIdx = dqn.predict([obs])[0]
+    aIdx = agent.compute_single_action(obs)
     obs, _, done, _ = env.step(aIdx)
     env.render()
 env.close()
