@@ -18,7 +18,7 @@ shutil.rmtree(ray_results, ignore_errors=True, onerror=None)
 
 config = dqn.DEFAULT_CONFIG.copy()
 config['log_level'] = "WARN"
-config['num_workers'] = 0
+config['num_workers'] = 1
 config['framework'] = "torch"
 config['horizon'] = 500
 
@@ -29,8 +29,8 @@ session = ray.init(ignore_reinit_error=True)
 # %% Controller
 agent = dqn.DQNTrainer(config, env=CartPoleRegulatorEnv)
 
-for _ in range(500):
-    agent.train()
+for epoch in range(10):
+    print(f"{epoch}: {agent.train()['episode_reward_mean']}")
 
 
 # %% demo mode
@@ -41,4 +41,6 @@ while not done:
     obs, _, done, _ = env.step(aIdx)
     env.render()
 env.close()
+
 # %%
+agent.save("./")
