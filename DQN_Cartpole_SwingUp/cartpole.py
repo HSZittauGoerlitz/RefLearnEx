@@ -64,7 +64,7 @@ class CartPoleRegulatorEnv(gym.Env):
 
         self.low = [-2.4, -10., -np.pi, -0.1]
         self.high = [2.4, 10., np.pi, 0.1]
-        self.render_sleep = 0.01
+        self.render_sleep = 0.02
 
         # Failure state description
         self.x_threshold = 4.8
@@ -167,10 +167,14 @@ class CartPoleRegulatorEnv(gym.Env):
 
         return [self.state, reward, done, {}]
 
-    def reset(self):
-        self.state = self.np_random.uniform(
-          low=self.low, high=self.high,
-          size=self.observation_space.shape)
+    def reset(self, demo=False):
+        if demo:
+            self.state = np.zeros(self.observation_space.shape)
+            self.state[2] = np.pi
+        else:
+            self.state = self.np_random.uniform(
+                low=self.low, high=self.high,
+                size=self.observation_space.shape)
         self.episode_step = 0
 
         return self.state
