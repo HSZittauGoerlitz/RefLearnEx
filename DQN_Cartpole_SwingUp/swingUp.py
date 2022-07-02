@@ -28,11 +28,16 @@ session = ray.init(ignore_reinit_error=True)
 agent = dqn.DQNTrainer(config, env=CartPoleRegulatorEnv)
 env.render_sleep = 0.
 
-for epoch in range(50):
-    print(f"{epoch}: {agent.train()['episode_reward_mean']}")
+for epoch in range(500):
+    res = agent.train()
+    print(f"{epoch}: {res['episode_reward_mean']}")
+
+    if res['episode_reward_mean'] > 25:
+        break
+
     obs = env.reset(True)
     if epoch % 10 == 0:
-        for _ in range(100):
+        for _ in range(500):
             aIdx = agent.compute_single_action(obs)
             obs, _, done, _ = env.step(aIdx)
             env.render()
