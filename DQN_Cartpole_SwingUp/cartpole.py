@@ -14,7 +14,7 @@ import numpy as np
 from gym import spaces
 from gym.utils import seeding
 
-from pyglet.window import mouse
+from pyglet.window import mouse, key
 
 class CartPoleRegulatorEnv(gym.Env):
     """
@@ -65,6 +65,7 @@ class CartPoleRegulatorEnv(gym.Env):
         self.low = [-2.4, -10., -np.pi, -0.1]
         self.high = [2.4, 10., np.pi, 0.1]
         self.render_sleep = 0.02
+        self.demo = False
 
         # Failure state description
         self.x_threshold = 4.8
@@ -236,7 +237,13 @@ class CartPoleRegulatorEnv(gym.Env):
                         action = max(min(dx * 0.1, 1.5), -1.5)
                         self.state = self._compute_next_state(action, True)
 
-            self.viewer.window.on_mouse_drag = onClick
+            def onPress(symbol, modifiers):
+                if symbol == key.ESCAPE:
+                    self.state[0] = self.observation_space.high[0]
+
+            if self.demo:
+                self.viewer.window.on_mouse_drag = onClick
+                self.viewer.window.on_key_press = onPress
 
         if self.state is None:
             return None

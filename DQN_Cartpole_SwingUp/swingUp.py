@@ -48,6 +48,7 @@ for epoch in range(500):
 
 # %% demo mode
 env.render_sleep = 0.02
+env.demo = True
 obs = env.reset(True)
 done = False
 while not done:
@@ -55,3 +56,5 @@ while not done:
     obs, _, done, _ = env.step(aIdx)
     env.render()
 env.close()
+
+# %%
