@@ -234,8 +234,7 @@ class CartPoleRegulatorEnv(gym.Env):
                         (y > self.carttrans.translation[1] - ch_half) and
                         (y < self.carttrans.translation[1] + ch_half)):
                         action = max(min(dx * 0.1, 1.5), -1.5)
-                        self.state = self._compute_next_state(self.state,
-                                                              action, True)
+                        self.state = self._compute_next_state(action, True)
 
             self.viewer.window.on_mouse_drag = onClick
 
